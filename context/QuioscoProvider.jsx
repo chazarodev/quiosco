@@ -1,6 +1,7 @@
 import {useState, useEffect, createContext} from "react";
 import axios from "axios";
 import { toast } from 'react-toastify';
+import { useRouter } from "next/router"
 
 const QuioscoContext = createContext()
 
@@ -11,6 +12,10 @@ const QuioscoProvider = ({children}) => {
     const [producto, setProducto] = useState({})
     const [modal, setModal] = useState(false)
     const [pedido, setPedido] = useState([])
+    const [nombre, setNombre] = useState('')
+    const [total, setTotal] = useState(0)
+
+    const router = useRouter()
 
     const obtenerCategorias = async () => {
         const {data} = await axios('/api/categorias')
@@ -25,9 +30,15 @@ const QuioscoProvider = ({children}) => {
         setCategoriaActual(categorias[0])
     }, [categorias])
 
+    useEffect(() => {
+        const nuevoTotal = pedido.reduce((total, producto) => (producto.precio * producto.cantidad) + total, 0)
+        setTotal(nuevoTotal)
+    }, [pedido])
+
     const handleClickCategoria = id => {
         const categoria = categorias.filter( cat => cat.id === id)
         setCategoriaActual(categoria[0])
+        router.push('/')//Nos aseguramos que al dar click en una categoría nos mande a la ruta.
     }
 
     const handleSetProducto = producto => {
@@ -53,6 +64,25 @@ const QuioscoProvider = ({children}) => {
         setModal(false)
     }
 
+    const handleEditarCantidades = id => {
+
+        //Extraer el producto del pedido
+        const productoActualizar = pedido.filter(producto => producto.id === id)
+        setProducto(productoActualizar[0])//El array method retorna un arreglo, por ello pasamos la posición cero
+
+        setModal(!modal)
+    }
+
+    const handleEliminarProducto = id => {
+        const pedidoActualizado = pedido.filter(producto => producto.id !== id)
+        setPedido(pedidoActualizado)
+    }
+
+    const colocarOrden = async (e) => {
+        e.preventDefault()
+        console.log('pendejo');
+    }
+
     return (
         <QuioscoContext.Provider
             value={{
@@ -65,6 +95,12 @@ const QuioscoProvider = ({children}) => {
                 handleChangeModal,
                 handleAgregarPedido,
                 pedido,
+                handleEditarCantidades,
+                handleEliminarProducto,
+                nombre,
+                setNombre,
+                colocarOrden,
+                total
             }}
         >
             {children}
